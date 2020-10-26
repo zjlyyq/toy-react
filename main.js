@@ -1,27 +1,12 @@
-import { createElement, ElementWrapper, TextWrapper, render } from './toy-react';
+import { render, Component } from './toy-react';
 
 
-class MyConponent {
-    constructor() {
-        this.root = document.createElement('div');
-    }
-
-    // 必须实现dom方法
-    setAttribute(attr, value) {
-        this.root.setAttribute(attr, value);
-    }
-
-    mountTo(parent) {
-        parent.appendChild(this.root);
-    }
-
-    appendChild(child) {
-        child.mountTo(this.root);
-    }
+class MyConponent extends Component{
 
     render() {
-        return 
+        return (<div><h1>title</h1></div>);
     }
+
 }
 
 let domDiv = <MyConponent class="app" style="color: red;text-align:center;">

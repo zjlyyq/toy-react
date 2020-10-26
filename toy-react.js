@@ -3,12 +3,8 @@ export class ElementWrapper {
         this.root = document.createElement(type);
     }
 
-    mountTo(parent) {
-        parent.appendChild(this.root);
-    }
-
     appendChild(child) {
-        child.mountTo(this.root);
+        this.root.appendChild(child.root);
     }
 
     // 必须实现dom方法
@@ -21,21 +17,28 @@ export class TextWrapper {
     constructor(content) {
         this.root = document.createTextNode(content);
     }
-    
-    mountTo(parent) {
-        parent.appendChild(this.root);
+}
+export class Component {
+    constructor() {
+        this.props = Object.create(null);
+        this._root = null;
     }
 
-    appendChild(child) {
-        child.mountTo(this.root);
-    }
-
-    // 必须实现dom方法
     setAttribute(attr, value) {
-        this.root.setAttribute(attr, value);
+        this.props[attr] = value;
+    }
+    
+    appendChild(child) {
+        this.root.appendChild(child.root);
+    }
+
+    get root() {
+        if (this._root === null) {
+            this._root = this.render().root;   // 可能会发生递归
+        }
+        return this._root;
     }
 }
-
 export function createElement (tagName, attributes, ...children) {
     let dom;
     if (typeof tagName === 'string') {
