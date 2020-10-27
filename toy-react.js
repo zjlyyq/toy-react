@@ -67,10 +67,30 @@ export class Component {
         }
         return this._root;
     }
-
+    // 重新渲染
     rerender() {
         this._range.deleteContents();
         this[RENDER_TO_DOM](this._range);
+    }
+
+    setState(newState) {
+        if (this.state === null || typeof this.state != 'object') {
+            this.state = newState;
+            this.rerender();
+            return;
+        }
+        let merge = (oldState, newState) => {
+            for (let p in newState) {
+                // 注意： typeof null === 'object'
+                if (oldState[p] === null || typeof oldState[p] != 'object') {
+                    oldState[p] = newState[p];
+                }else {
+                    merge(oldState[p], newState[p]);
+                }
+            }
+        }
+        merge(this.state, newState);
+        this.rerender();
     }
 }
 

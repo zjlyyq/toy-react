@@ -15,9 +15,9 @@ class MyConponent extends Component{
             <h1>title</h1>
             <h2>title2</h2>
             <p style="color: pink;font-size:24px;">
-                { this.state.a }
+                a: { this.state.a }, b: { this.state.b }
             </p>
-            <button id = "bt" onclick={() => { this.state.a++;this.rerender();}}>add</button>
+            <button id = "bt" onclick={() => { this.setState({a: this.state.a++})}}>add</button>
             { this.children }
         </div>
         );
