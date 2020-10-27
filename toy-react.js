@@ -15,6 +15,11 @@ export class ElementWrapper {
 
     // 必须实现dom方法
     setAttribute(attr, value) {
+        if (attr === 'className') {
+            debugger
+            this.root.setAttribute('class', value);
+            return;
+        }
         if ( attr.match(/^on([\s\S]+)/) ) {
             let name = RegExp.$1;
             this.root.addEventListener(name.replace(name[0], name[0].toLowerCase()), value);
@@ -107,6 +112,7 @@ export function createElement (tagName, attributes, ...children) {
 
     function handleChildren(children) {
         for (let child of children) {
+            if (child === null) continue;
             if (typeof child === 'object') {
                 if (child instanceof Array)
                     handleChildren(child);
