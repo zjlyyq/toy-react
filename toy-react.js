@@ -1,21 +1,37 @@
+const RENDER_TO_DOM = Symbol('render_to_dom');
+
 export class ElementWrapper {
     constructor(type) {
         this.root = document.createElement(type);
     }
 
     appendChild(child) {
-        this.root.appendChild(child.root);
+        // this.root.appendChild(child.root);
+        let range = document.createRange();
+        range.setStart(this.root, this.root.childNodes.length);
+        range.setEnd(this.root, this.root.childNodes.length); 
+        child[RENDER_TO_DOM](range);
     }
 
     // 必须实现dom方法
     setAttribute(attr, value) {
         this.root.setAttribute(attr, value);
     }
+
+    [RENDER_TO_DOM](range) {
+        range.deleteContents();
+        range.insertNode(this.root);
+    }
 }
 
 export class TextWrapper {
     constructor(content) {
         this.root = document.createTextNode(content);
+    }
+
+    [RENDER_TO_DOM](range) {
+        range.deleteContents();
+        range.insertNode(this.root);
     }
 }
 export class Component {
@@ -34,6 +50,10 @@ export class Component {
         this.children.push(child);
     }
 
+    [RENDER_TO_DOM](range) {
+        this.render()[RENDER_TO_DOM](range);
+    }
+
     get root() {
         if (this._root === null) {
             this._root = this.render().root;   // 可能会发生递归
@@ -41,6 +61,7 @@ export class Component {
         return this._root;
     }
 }
+
 export function createElement (tagName, attributes, ...children) {
     let dom;
     if (typeof tagName === 'string') {
@@ -72,5 +93,9 @@ export function createElement (tagName, attributes, ...children) {
 }
 
 export function render(component, parentDom) {
-    parentDom.appendChild(component.root);
+    let range = document.createRange();
+    range.setStart(parentDom, 0);
+    range.setEnd(parentDom, parentDom.childNodes.length);
+    range.deleteContents();
+    component[RENDER_TO_DOM](range);
 }
