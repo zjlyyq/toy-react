@@ -15,6 +15,11 @@ export class ElementWrapper {
 
     // 必须实现dom方法
     setAttribute(attr, value) {
+        if ( attr.match(/^on([\s\S]+)/) ) {
+            let name = RegExp.$1;
+            this.root.addEventListener(name.replace(name[0], name[0].toLowerCase()), value);
+            return;
+        }
         this.root.setAttribute(attr, value);
     }
 
@@ -39,6 +44,7 @@ export class Component {
         this.props = Object.create(null);
         this._root = null;
         this.children = [];
+        this._range = null;
     }
 
     setAttribute(attr, value) {
@@ -51,6 +57,7 @@ export class Component {
     }
 
     [RENDER_TO_DOM](range) {
+        this._range = range;
         this.render()[RENDER_TO_DOM](range);
     }
 
@@ -59,6 +66,11 @@ export class Component {
             this._root = this.render().root;   // 可能会发生递归
         }
         return this._root;
+    }
+
+    rerender() {
+        this._range.deleteContents();
+        this[RENDER_TO_DOM](this._range);
     }
 }
 

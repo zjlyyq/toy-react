@@ -2,16 +2,22 @@ import { createElement, ElementWrapper, TextWrapper, render, Component } from '.
 
 
 class MyConponent extends Component{
-
+    constructor() {
+        super();
+        this.state = {
+            a: 1,
+            b: 2
+        }
+    }
     render() {
         return (
         <div>
             <h1>title</h1>
             <h2>title2</h2>
             <p style="color: pink;font-size:24px;">
-                p1
-                <span>span</span>
+                { this.state.a }
             </p>
+            <button id = "bt" onclick={() => { this.state.a++;this.rerender();}}>add</button>
             { this.children }
         </div>
         );
