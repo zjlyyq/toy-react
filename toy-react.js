@@ -1,3 +1,5 @@
+const RENDER_TO_DOM = Symbol('render_to_dom');
+
 export class ElementWrapper {
     constructor(type) {
         this.root = document.createElement(type);
@@ -11,11 +13,22 @@ export class ElementWrapper {
     setAttribute(attr, value) {
         this.root.setAttribute(attr, value);
     }
+
+    [RENDER_TO_DOM](range) {
+        range.deleteContents();
+        range.insertNode(this.root);
+    }
 }
 
 export class TextWrapper {
     constructor(content) {
         this.root = document.createTextNode(content);
+    }
+
+
+    [RENDER_TO_DOM](range) {
+        range.deleteContents();
+        range.insertNode(this.root);
     }
 }
 export class Component {
@@ -29,7 +42,14 @@ export class Component {
     }
     
     appendChild(child) {
-        this.root.appendChild(child.root);
+        let range = document.createRange();
+        range.setStart(this.root, 0);
+        range.setEnd(this.root, this.root.childNodes.length);
+        child[RENDER_TO_DOM](range);
+    }
+
+    [RENDER_TO_DOM](range) {
+        this.render()[RENDER_TO_DOM](range);
     }
 
     get root() {
@@ -60,5 +80,10 @@ export function createElement (tagName, attributes, ...children) {
 }
 
 export function render(component, parentDom) {
-    parentDom.appendChild(component.root);
+    // parentDom.appendChild(component.root);
+    let range = document.createRange();
+    range.setStart(parentDom, 0);
+    range.setEnd(parentDom, parentDom.childNodes.length);
+    range.deleteContents();
+    component[RENDER_TO_DOM](range)
 }
