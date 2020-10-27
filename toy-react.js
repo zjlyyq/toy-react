@@ -22,6 +22,7 @@ export class Component {
     constructor() {
         this.props = Object.create(null);
         this._root = null;
+        this.children = [];
     }
 
     setAttribute(attr, value) {
@@ -29,7 +30,8 @@ export class Component {
     }
     
     appendChild(child) {
-        this.root.appendChild(child.root);
+        // this.root.appendChild(child.root);
+        this.children.push(child);
     }
 
     get root() {
@@ -44,18 +46,28 @@ export function createElement (tagName, attributes, ...children) {
     if (typeof tagName === 'string') {
         dom = new ElementWrapper(tagName);
     }else if (typeof tagName === 'function' || typeof tagName === 'object'){
-        dom = new tagName
+        dom = new tagName;
     }
     for (let attr in attributes) {
         dom.setAttribute(attr, attributes[attr]);
     }
-    if (children) {
+
+    function handleChildren(children) {
         for (let child of children) {
-            if (typeof child === 'string')
+            if (typeof child === 'object') {
+                if (child instanceof Array)
+                    handleChildren(child);
+                else 
+                    dom.appendChild(child);
+            }else {
                 child = new TextWrapper(child)
-            dom.appendChild(child);
+                dom.appendChild(child);
+            }
         }
     }
+
+    handleChildren(children);
+    
     return dom;
 }
 

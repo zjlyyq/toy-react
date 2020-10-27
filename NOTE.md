@@ -170,3 +170,5 @@ function createElement (tagName, attributes, ...children) {
 
 否则上述的dom和child都可能不是Dom元素，上述的句子必然会报错。
 
+最终实现
+![](./static/imgs/重构createElement.jpeg)
