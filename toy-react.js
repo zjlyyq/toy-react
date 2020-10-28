@@ -21,14 +21,60 @@ export class Component {
 
     [RENDER_TO_DOM](range) {
         this._range = range;
-        this.render()[RENDER_TO_DOM](range);
+        // this.render()[RENDER_TO_DOM](range);
+        // 保存旧 vdom
+        this._vdom = this.vdom;
+        this._vdom[RENDER_TO_DOM](range);
     }
 
     get vdom() {
-        if (this._vdom === null) {
-            this._vdom = this.render().vdom;
+        // console.log('render')
+        // console.log(this);
+        return this.render().vdom;
+    }
+
+    update() {
+        let isSameNode = (oldNode, newNode) => {
+            if (oldNode.type !== newNode.type)
+                return false;
+            for (let attr in newNode.props) {
+                if (oldNode.props[attr] !== newNode.props[attr])
+                    return false;
+            }
+            if (Object.keys(oldNode.props).length > Object.keys(newNode.props).length)
+                return false;
+            if (newNode.type === '#text') {
+                if (newNode.content !== oldNode.content)
+                    return false;
+            }
+
+            return true;
         }
-        return this._vdom;
+        let update = (oldNode, newNode) => {
+            // type props children
+            if (!isSameNode(oldNode, newNode)) {
+                newNode[RENDER_TO_DOM](oldNode._range);
+                return;
+            }
+            newNode._range = oldNode._range;
+
+            let newChildren = newNode.vchildren;
+            let oldChildren = oldNode.vchildren;
+
+            for(let i = 0;i < newChildren.length;i ++) {
+                let newChild = newChildren[i];
+                let oldChild = oldChildren[i];
+                if (i < oldChildren.length) {
+                    update(oldChild, newChild);
+                }else {
+                    // TODO
+                }
+            }
+        }
+        let vdom = this.vdom;  // 重新生成的vdom树，没有range信息
+        update(this._vdom, vdom);
+        // this._vdom = this.vdom;   // 又是一个致命失误
+        this._vdom = vdom;
     }
 
     // 重新渲染
@@ -40,7 +86,8 @@ export class Component {
     setState(newState) {
         if (this.state === null || typeof this.state != 'object') {
             this.state = newState;
-            this.rerender();
+            // this.rerender();
+            this.update();
             return;
         }
         let merge = (oldState, newState) => {
@@ -54,7 +101,8 @@ export class Component {
             }
         }
         merge(this.state, newState);
-        this.rerender();
+        // this.rerender();
+        this.update();
     }
 }
 
@@ -65,8 +113,10 @@ export class ElementWrapper extends Component {
     }
 
     [RENDER_TO_DOM](range) {
+        this._range = range;
         // vdom => dom
-        let root = document.createElement(this.vdom.type);
+        // let root = document.createElement(this.vdom.type);   //致命失误，千万不能有冗余的vdom访问
+        let root = document.createElement(this.type);
         for (let attr in this.props) {
             let value = this.props[attr];
             if (attr === 'className') {
@@ -91,33 +141,29 @@ export class ElementWrapper extends Component {
     }
 
     get vdom() {
-        return {
-            type: this.type,
-            props: this.props,
-            children: this.children,
-            vchildren: this.vchildren
-        }
+        // console.log(this);
+        return this;
     }
 }
 
 export class TextWrapper extends Component{
     constructor(content) {
         super();
-        this.root = document.createTextNode(content);
+        // this.root = document.createTextNode(content);
         this.type = "#text";
         this.content = content;
     }
 
     [RENDER_TO_DOM](range) {
+        this._range = range;
+        let root = document.createTextNode(this.content);
         range.deleteContents();
-        range.insertNode(this.root);
+        range.insertNode(root);
     }
 
     get vdom() {
-        return {
-            type: this.type,
-            content: this.content
-        }
+        // console.log(this);
+        return this;
     }
 }
 
