@@ -1,54 +1,12 @@
 const RENDER_TO_DOM = Symbol('render_to_dom');
 
-export class ElementWrapper {
-    constructor(type) {
-        this.root = document.createElement(type);
-    }
-
-    appendChild(child) {
-        // this.root.appendChild(child.root);
-        let range = document.createRange();
-        range.setStart(this.root, this.root.childNodes.length);
-        range.setEnd(this.root, this.root.childNodes.length); 
-        child[RENDER_TO_DOM](range);
-    }
-
-    // 必须实现dom方法
-    setAttribute(attr, value) {
-        if (attr === 'className') {
-            debugger
-            this.root.setAttribute('class', value);
-            return;
-        }
-        if ( attr.match(/^on([\s\S]+)/) ) {
-            let name = RegExp.$1;
-            this.root.addEventListener(name.replace(name[0], name[0].toLowerCase()), value);
-            return;
-        }
-        this.root.setAttribute(attr, value);
-    }
-
-    [RENDER_TO_DOM](range) {
-        range.deleteContents();
-        range.insertNode(this.root);
-    }
-}
-
-export class TextWrapper {
-    constructor(content) {
-        this.root = document.createTextNode(content);
-    }
-
-    [RENDER_TO_DOM](range) {
-        range.deleteContents();
-        range.insertNode(this.root);
-    }
-}
 export class Component {
     constructor() {
         this.props = Object.create(null);
         this._root = null;
+        this._vdom = null;
         this.children = [];
+        this.vchildren = [];
         this._range = null;
     }
 
@@ -57,8 +15,8 @@ export class Component {
     }
     
     appendChild(child) {
-        // this.root.appendChild(child.root);
         this.children.push(child);
+        this.vchildren.push(child.vdom);
     }
 
     [RENDER_TO_DOM](range) {
@@ -66,12 +24,13 @@ export class Component {
         this.render()[RENDER_TO_DOM](range);
     }
 
-    get root() {
-        if (this._root === null) {
-            this._root = this.render().root;   // 可能会发生递归
+    get vdom() {
+        if (this._vdom === null) {
+            this._vdom = this.render().vdom;
         }
-        return this._root;
+        return this._vdom;
     }
+
     // 重新渲染
     rerender() {
         this._range.deleteContents();
@@ -98,6 +57,70 @@ export class Component {
         this.rerender();
     }
 }
+
+export class ElementWrapper extends Component {
+    constructor(type) {
+        super();
+        this.type = type;
+    }
+
+    [RENDER_TO_DOM](range) {
+        // vdom => dom
+        let root = document.createElement(this.vdom.type);
+        for (let attr in this.props) {
+            let value = this.props[attr];
+            if (attr === 'className') {
+                root.setAttribute('class', value);
+                continue;
+            }
+            if ( attr.match(/^on([\s\S]+)/) ) {
+                let name = RegExp.$1;
+                root.addEventListener(name.replace(name[0], name[0].toLowerCase()), value);
+                continue;
+            }
+            root.setAttribute(attr, value);
+        }
+        for (let child of this.children) {
+            let range = document.createRange();
+            range.setStart(root, root.childNodes.length);
+            range.setEnd(root, root.childNodes.length);
+            child[RENDER_TO_DOM](range);
+        }
+        range.deleteContents();
+        range.insertNode(root);
+    }
+
+    get vdom() {
+        return {
+            type: this.type,
+            props: this.props,
+            children: this.children,
+            vchildren: this.vchildren
+        }
+    }
+}
+
+export class TextWrapper extends Component{
+    constructor(content) {
+        super();
+        this.root = document.createTextNode(content);
+        this.type = "#text";
+        this.content = content;
+    }
+
+    [RENDER_TO_DOM](range) {
+        range.deleteContents();
+        range.insertNode(this.root);
+    }
+
+    get vdom() {
+        return {
+            type: this.type,
+            content: this.content
+        }
+    }
+}
+
 
 export function createElement (tagName, attributes, ...children) {
     let dom;
