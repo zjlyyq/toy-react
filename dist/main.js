@@ -87,13 +87,12 @@ var MyConponent = /*#__PURE__*/function (_Component) {
   }]);
 
   return MyConponent;
-}(_toy_react__WEBPACK_IMPORTED_MODULE_0__.Component);
+}(_toy_react__WEBPACK_IMPORTED_MODULE_0__.Component); // let domDiv = <MyConponent class="app" style="color: red;text-align:center;">
+//     {/* <p style="font-size:36px;">content</p>
+//     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xMS41IC0xMC4yMzE3NCAyMyAyMC40NjM0OCI+CiAgPHRpdGxlPlJlYWN0IExvZ288L3RpdGxlPgogIDxjaXJjbGUgY3g9IjAiIGN5PSIwIiByPSIyLjA1IiBmaWxsPSIjNjFkYWZiIi8+CiAgPGcgc3Ryb2tlPSIjNjFkYWZiIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIi8+CiAgICA8ZWxsaXBzZSByeD0iMTEiIHJ5PSI0LjIiIHRyYW5zZm9ybT0icm90YXRlKDYwKSIvPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIiB0cmFuc2Zvcm09InJvdGF0ZSgxMjApIi8+CiAgPC9nPgo8L3N2Zz4K"></img> */}
+// </MyConponent>
+// render(domDiv, document.body);
 
-var domDiv = (0,_toy_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(MyConponent, {
-  "class": "app",
-  style: "color: red;text-align:center;"
-});
-(0,_toy_react__WEBPACK_IMPORTED_MODULE_0__.render)(domDiv, document.body);
 
 var Square = /*#__PURE__*/function (_Component2) {
   _inherits(Square, _Component2);
@@ -182,6 +181,7 @@ var Game = /*#__PURE__*/function (_Component4) {
   _createClass(Game, [{
     key: "handleClick",
     value: function handleClick(i) {
+      debugger;
       var history = this.state.history.slice(0, this.state.stepNumber + 1);
       var current = history[history.length - 1];
       var squares = current.squares.slice();
@@ -252,8 +252,9 @@ var Game = /*#__PURE__*/function (_Component4) {
 }(_toy_react__WEBPACK_IMPORTED_MODULE_0__.Component); // ========================================
 
 
-var game = (0,_toy_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Game, null); // console.log(game.vdom);
-// render(game, document.getElementById("root"));
+var game = (0,_toy_react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Game, null);
+(0,_toy_react__WEBPACK_IMPORTED_MODULE_0__.render)(game, document.getElementById("root"));
+console.log(game);
 
 function calculateWinner(squares) {
   var lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
@@ -345,8 +346,7 @@ var Component = /*#__PURE__*/function () {
   }, {
     key: "appendChild",
     value: function appendChild(child) {
-      this.children.push(child);
-      this.vchildren.push(child.vdom);
+      this.children.push(child); // this.vchildren.push(child.vdom);
     }
   }, {
     key: RENDER_TO_DOM,
@@ -394,7 +394,9 @@ var Component = /*#__PURE__*/function () {
 
           if (i < oldChildren.length) {
             update(oldChild, newChild);
-          } else {// TODO
+          } else {
+            // TODO
+            newNode[RENDER_TO_DOM](oldNode._range);
           }
         }
       };
@@ -487,9 +489,14 @@ var ElementWrapper = /*#__PURE__*/function (_Component) {
         }
 
         root.setAttribute(attr, value);
-      }
+      } // if (!this.vchildren) {
+      //     this.vchildren = this.children.map(child => child.vdom);
+      // }
+      // 为什么这里用成this.children 就不行 🚫, range 会是空。（this.children可能是Component实例，
+      // 调用Component.[RENDER_TO_DOM]会造成冗余的vmod读取(this.render().vdom)，render会造成递归的子节点_range信息置为null）
 
-      var _iterator = _createForOfIteratorHelper(this.children),
+
+      var _iterator = _createForOfIteratorHelper(this.vchildren),
           _step;
 
       try {
@@ -503,26 +510,40 @@ var ElementWrapper = /*#__PURE__*/function (_Component) {
           _range.setEnd(root, root.childNodes.length);
 
           child[RENDER_TO_DOM](_range);
-        }
+        } // range.deleteContents();
+        // range.insertNode(root);
+
       } catch (err) {
         _iterator.e(err);
       } finally {
         _iterator.f();
       }
 
-      range.deleteContents();
-      range.insertNode(root);
+      replaceRange(range, root);
     }
   }, {
     key: "vdom",
     get: function get() {
-      // console.log(this);
+      // 由于调用了child.vdom，有个实时跟新的效果
+      this.vchildren = this.children.map(function (child) {
+        return child.vdom;
+      }); // console.log(this);
+
       return this;
     }
   }]);
 
   return ElementWrapper;
 }(Component);
+
+function replaceRange(range, node) {
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.deleteContents();
+  range.setStartBefore(node);
+  range.setEndAfter(node);
+}
+
 var TextWrapper = /*#__PURE__*/function (_Component2) {
   _inherits(TextWrapper, _Component2);
 
@@ -544,9 +565,10 @@ var TextWrapper = /*#__PURE__*/function (_Component2) {
     key: RENDER_TO_DOM,
     value: function value(range) {
       this._range = range;
-      var root = document.createTextNode(this.content);
-      range.deleteContents();
-      range.insertNode(root);
+      var root = document.createTextNode(this.content); // range.deleteContents();
+      // range.insertNode(root);
+
+      replaceRange(range, root);
     }
   }, {
     key: "vdom",

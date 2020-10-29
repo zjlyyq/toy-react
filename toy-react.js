@@ -16,7 +16,7 @@ export class Component {
     
     appendChild(child) {
         this.children.push(child);
-        this.vchildren.push(child.vdom);
+        // this.vchildren.push(child.vdom);
     }
 
     [RENDER_TO_DOM](range) {
@@ -68,6 +68,7 @@ export class Component {
                     update(oldChild, newChild);
                 }else {
                     // TODO
+                    newNode[RENDER_TO_DOM](oldNode._range);
                 }
             }
         }
@@ -130,22 +131,36 @@ export class ElementWrapper extends Component {
             }
             root.setAttribute(attr, value);
         }
-        for (let child of this.children) {
+        // if (!this.vchildren) {
+        //     this.vchildren = this.children.map(child => child.vdom);
+        // }
+        // 为什么这里用成this.children 就不行 🚫, range 会是空。（this.children可能是Component实例，
+        // 调用Component.[RENDER_TO_DOM]会造成冗余的vmod读取(this.render().vdom)，render会造成递归的子节点_range信息置为null）
+        for (let child of this.vchildren) {
             let range = document.createRange();
             range.setStart(root, root.childNodes.length);
             range.setEnd(root, root.childNodes.length);
             child[RENDER_TO_DOM](range);
         }
-        range.deleteContents();
-        range.insertNode(root);
+        // range.deleteContents();
+        // range.insertNode(root);
+        replaceRange(range, root);
     }
 
     get vdom() {
+        // 由于调用了child.vdom，有个实时跟新的效果
+        this.vchildren = this.children.map(child => child.vdom);
         // console.log(this);
         return this;
     }
 }
-
+function replaceRange (range, node) {
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.deleteContents();
+    range.setStartBefore(node);
+    range.setEndAfter(node);
+}
 export class TextWrapper extends Component{
     constructor(content) {
         super();
@@ -157,8 +172,9 @@ export class TextWrapper extends Component{
     [RENDER_TO_DOM](range) {
         this._range = range;
         let root = document.createTextNode(this.content);
-        range.deleteContents();
-        range.insertNode(root);
+        // range.deleteContents();
+        // range.insertNode(root);
+        replaceRange(range, root);
     }
 
     get vdom() {
