@@ -23,8 +23,9 @@ module.exports = {
         ]
     },
     devServer: {
+        open: true,
         port: 8080,
-        // host: '192.168.199.208'
+        contentBase: './dist'
     },
     mode: "development",
     devtool: 'source-map'
